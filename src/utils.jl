@@ -1,87 +1,74 @@
 """Module with helper functions"""
 
 module Utils
+export preprocess, process_embed, compute_cosm
 
 # Import required modules
-using PDFI
-using TextAnalysis
-using LinearAlgebra
 using Languages
+using LinearAlgebra
+using OrderedCollections
+using PDFIO
 using PyCall
 using SparseArrays
+using TextAnalysis
 
 """
 Function that preprocess pdf documents:
-- Takes directory containing documents in pdf format
-- Parses papers and extract title and body
-- Returns dictionary of papers with title as key and body as value
+- Take directory containing documents in pdf format
+- Parse documents and extract contents
+- Return dictionary and corpus of files and contents
 """
-function preprocess(dir_path::String)
+function preprocess(
+    input_path::String,
+)::Tuple{Dict{String,String},Corpus{StringDocument{String}}}
     collection = Dict{String,String}()
-    files = readdir(dir_path)
-    title = ""
+    files = readdir(input_path, join = true)
     for file in files
+        io = IOBuffer()
         doc = pdDocOpen(file)
-        number_page = pdDocGetPageCount(doc)
-        for page in number_page
-            ref = pdDocGetPage(doc, page)
-            io = IOBuffer()
-            pdPageExtractText(io, ref)
-            content = String(take!(io))
-            indices = findfirst("introduction", lowercase(content))
-            if indices isa UnitRange
-                global title
-                title = strip(content[begin:indices[begin-1]]) # take care of title cleaning separately
-                other = content[indices[begin]:end]
-            else
-                other = content
-            end
-            if length(title) != 0
-                if title
-                    not in collections
-                    collection[(file, title)] = other
-                else
-                    collection[(file, title)] *= other
-                end
-            end
+        npage = pdDocGetPageCount(doc)
+        for num = 1:npage
+            page = pdDocGetPage(doc, num)
+            pdPageExtractText(io, page)
         end
+        content = String(take!(io))
+        collection[file] = content
     end
-
-    collection = sort(collect(collection), by = x -> x[1][2]) # sort by second element of key (title) for traceback
+    collection = sort(collection) # sort by file for traceback
     corpus = Corpus([
-        StringDocument(val, TextAnalysis.DocumentMetadata(Languages.English(), key[2]))
-        for (key, val) in collection
+        StringDocument(
+            collection[file],
+            TextAnalysis.DocumentMetadata(Languages.English(), file),
+        ) for file in keys(collection)
     ])
-
     return collection, corpus
 end
 
 
 """
 Function that completes processing of documents and embeds their contents:
-- Takes a Corpus
-- Process in-place contents of StringDocument(s) in Corpus
-- Embeds StringDocument contents using specified model
-- Returns embeddings of cleaned StringDocument(s)
+- Take a Corpus
+- Process in-place contents of StringDocuments in Corpus
+- Embed StringDocument contents using specified model
+- Return embeddings of cleaned StringDocuments
 """
-function process_embed(docs::Corpus, model::PyObject, normalize = true)
+function process_embed(docs::Corpus, model::PyObject, normalize = true)::Matrix{Float32}
     prepare!(docs, strip_punctuation | strip_numbers | strip_case | strip_whitespace)
     texts = [text(doc) for doc in documents(docs)]
     embeddings = model.encode(texts, normalize_embeddings = normalize)
-    return PyArray(embeddings)
+    return embeddings
 end
 
 
 """
 Function that computes cosine similarity between two embedding vectors:
-- Takes embedding vectors a and b
-- Computes and returns cosine similarity measure
+- Take embedding vectors a and b
+- Compute and returns cosine similarity value
 """
-function compute_cosm(a::AbstractVector, b::AbstractVector)
+function compute_cosm(a::AbstractVector, b::AbstractVector)::Float32
     num = dot(a, b)
     den = norm(a) * norm(b)
     return den > 0 ? num / den : 0.0f0
 end
-
 
 end
