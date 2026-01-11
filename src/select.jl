@@ -10,7 +10,7 @@ import CSV
 INPUT_PATH = get(ENV, "INPUT_PATH", "../input")
 MODEL_NAME = get(ENV, "MODEL_NAME", "Alibaba-NLP/gte-multilingual-base")
 NUM_QUERIES = get(ENV, "NUM_QUERY", 5)
-TOP_RESULTS = get(ENV, "TOP_RESULTS", 10)
+TOP_RESULTS = get(ENV, "TOP_RESULTS", 5)
 OUTPUT_PATH = get(ENV, "OUTPUT_PATH", "../output")
 
 """
@@ -57,8 +57,8 @@ Function that evaluates the relevance of a document for each query based on embe
 """
 function evaluate_relevance(
     selector::Selector,
-    collection::OrderedCollections.OrderedDict,
-    queries::Corpus,
+    collection::Vector{Pair{Tuple{String,String},String}},
+    queries::Corpus{StringDocument{String}},
     query_embeds::PyArray,
     doc_embeds::PyArray,
 )
@@ -74,19 +74,26 @@ function evaluate_relevance(
         sorted = sortperm(cos, rev = true)[1:selector.top_results] # get indices of best documents
         scores = cos[sorted]
 
-        # Extract corresponding titles
-        keys = collect(keys(ori))
-        titles = [keys[el] for el in sorted]
+        # Extract corresponding filenames and titles
+        filenames = [collection[el][1] for el in sorted]
+        titles = [collection[el][2] for el in sorted]
+
+        # Copy relevant documents to separate location
+        dest_name = join(split(query)[1:2], '_')
+        for filename in filenames
+            cp(filename, "$(selector.output_path)/$(dest_name)/basename(filename)")
+        end
 
         # Organize results
         df = DataFrame(
             "queries" = [query for query = 1:selector.top_results],
+            "filenames" = filenames,
             "titles" = titles,
             "scores" = scores,
         )
         push!(dfs, df)
     end
-    CSV.write(selector.output_path, dfs)
+    CSV.write("$(selector.output_path)_report.csv", dfs)
 end
 
 

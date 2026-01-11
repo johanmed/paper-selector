@@ -39,20 +39,18 @@ function preprocess(dir_path::String)
             if length(title) != 0
                 if title
                     not in collections
-                    collection[title] = other
+                    collection[(file, title)] = other
                 else
-                    collection[title] *= other
+                    collection[(file, title)] *= other
                 end
             end
         end
     end
 
-    collection = sort(collection) # sort by key to facilitate traceback
+    collection = sort(collect(collection), by = x -> x[1][2]) # sort by second element of key (title) for traceback
     corpus = Corpus([
-        StringDocument(
-            collection[title],
-            TextAnalysis.DocumentMetadata(Languages.English(), title),
-        ) for title in collection
+        StringDocument(val, TextAnalysis.DocumentMetadata(Languages.English(), key[2]))
+        for (key, val) in collection
     ])
 
     return collection, corpus
