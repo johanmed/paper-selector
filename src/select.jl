@@ -28,7 +28,7 @@ Base.@kwdef struct Selector
     model_name::String
     num_queries::Int8
     top_results::Int8
-    alpha::Float16=0.5
+    alpha::Float16=0.6
 end
 
 
