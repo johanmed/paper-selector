@@ -28,11 +28,12 @@ Base.@kwdef struct Selector
     model_name::String
     num_queries::Int8
     top_results::Int8
+    alpha::Float16=0.5
 end
 
 
 """
-Function that generates embeddings for pdf documents and queries/instructions
+Function that generates embeddings for pdf documents and queries
 - Take selector instance with its data
 - Process and convert pdf documents and queries to Corpus
 - Produce embeddings for pdf documents and queries
@@ -47,7 +48,9 @@ function get_embeddings(selector::Selector)
     )
     collection, docs = preprocess(selector.input_path)
     doc_embeds = process_embed(docs, model)
-    println("Enter $(selector.num_queries) instructions one at a time:")
+    println(
+        "Let's digest the papers based on queries.\nEnter $(selector.num_queries) queries you are interested in - one at a time:",
+    )
     queries = Corpus([
         StringDocument(
             readline(),
@@ -55,7 +58,7 @@ function get_embeddings(selector::Selector)
         ) for n = 1:selector.num_queries
     ])
     query_embeds = process_embed(queries, model)
-    return collection, queries, query_embeds, doc_embeds
+    return queries, query_embeds, docs, doc_embeds, collection
 end
 
 
@@ -68,29 +71,35 @@ Function that evaluates the relevance of a pdf document for each query based on 
 """
 function evaluate_relevance(
     selector::Selector,
-    collection::Dict{String,String},
     queries::Corpus{StringDocument{String}},
     query_embeds::Matrix{Float32},
+    docs::Corpus{StringDocument{String}},
     doc_embeds::Matrix{Float32},
+    collection::Dict{String,String},
 )
     query_cont, filename_cont, score_cont = [], [], []
 
-    queries = [text(query) for query in documents(queries)]
+    format_queries = [query for query in documents(queries)]
+    text_queries = [text(query) for query in format_queries]
 
-    for (query, query_vec) in zip(queries, eachrow(query_embeds))
-        cos = [
+    for (text_query, format_query, query_vec) in
+        zip(text_queries, format_queries, eachrow(query_embeds))
+        sem_scores = [
             compute_cosm(query_vec, view(doc_embeds, row, :)) for
             row = 1:size(doc_embeds, 1)
         ]
-        sorted = sortperm(cos, rev = true)[1:selector.top_results] # get indices of best documents
-        scores = cos[sorted]
+        bm25_scores = compute_bm25(docs, format_query)
+        hybrid_scores = selector.alpha .* sem_scores .+ (1 - selector.alpha) .* bm25_scores
+
+        sorted = sortperm(hybrid_scores, rev = true)[1:selector.top_results] # get indices of best documents
+        scores = hybrid_scores[sorted]
 
         # Extract corresponding filenames
         files = collect(keys(collection))
-        rel_files = [files[el] for el in sorted]
+        rel_files = files[sorted]
 
         # Copy relevant documents to separate location
-        dest_name = join(split(query)[1:3], '_')
+        dest_name = join(split(text_query)[1:3], '_')
         for file in rel_files
             final_name = "$(selector.output_path)/$(dest_name)/$(basename(file))"
             mkpath(final_name)
@@ -98,7 +107,7 @@ function evaluate_relevance(
         end
 
         # Store results
-        append!(query_cont, [query for ind = 1:selector.top_results])
+        append!(query_cont, [text_query for ind = 1:selector.top_results])
         append!(filename_cont, [basename(file) for file in rel_files]) # store only basenames
         append!(score_cont, scores)
 
@@ -119,5 +128,5 @@ selector = Selector(
     top_results = TOP_RESULTS,
 )
 
-collection, queries, query_embeds, doc_embeds = get_embeddings(selector)
-evaluate_relevance(selector, collection, queries, query_embeds, doc_embeds)
+queries, query_embeds, docs, doc_embeds, collection = get_embeddings(selector)
+evaluate_relevance(selector, queries, query_embeds, docs, doc_embeds, collection)
