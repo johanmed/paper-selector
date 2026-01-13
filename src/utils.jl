@@ -15,8 +15,8 @@ using TextAnalysis
 """
 Function that preprocess pdf documents:
 - Take directory containing documents in pdf format
-- Parse documents and extract contents
-- Return dictionary and corpus of files and contents
+- Parse documents and extract contents from pdf
+- Return dictionary of files and contents and properly formatted corpus
 """
 function preprocess(
     input_path::String,
@@ -47,9 +47,9 @@ end
 
 """
 Function that completes processing of documents and embeds their contents:
-- Take a Corpus
+- Take a Corpus and an embedding model from Python interface
 - Process in-place contents of StringDocuments in Corpus
-- Embed StringDocument contents using specified model
+- Embed StringDocument contents using specified embedding model
 - Return embeddings of cleaned StringDocuments
 """
 function process_embed(docs::Corpus, model::PyObject, normalize = true)::Matrix{Float32}

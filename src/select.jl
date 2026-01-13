@@ -32,10 +32,14 @@ end
 
 
 """
-Function that extracts embeddings for documents or queries
+Function that generates embeddings for pdf documents and queries/instructions
+- Take selector instance with its data
+- Process and convert pdf documents and queries to Corpus
+- Produce embeddings for pdf documents and queries
+- Return dictionary of documents, queries, query embeddings and document embeddings
 """
 function get_embeddings(selector::Selector)
-    # Load model
+    # Load model from Python interface
     sentence_transformers = pyimport("sentence_transformers")
     model = sentence_transformers.SentenceTransformer(
         selector.model_name,
@@ -56,7 +60,11 @@ end
 
 
 """
-Function that evaluates the relevance of a document for each query based on embeddings and writes the results
+Function that evaluates the relevance of a pdf document for each query based on embeddings and writes the results
+- Take a selector instance, dictionary of documents, queries, query embeddings and document embeddings
+- Compute similarity of pdf documents to each query
+- Select the top documents for each query
+- Organize and store top results for each query
 """
 function evaluate_relevance(
     selector::Selector,
@@ -91,7 +99,7 @@ function evaluate_relevance(
 
         # Store results
         append!(query_cont, [query for ind = 1:selector.top_results])
-        append!(filename_cont, rel_files)
+        append!(filename_cont, [basename(file) for file in rel_files]) # store only basenames
         append!(score_cont, scores)
 
     end
