@@ -99,7 +99,7 @@ function evaluate_relevance(
         rel_files = files[sorted]
 
         # Copy relevant documents to separate location
-        dest_name = join(split(text_query)[1:3], '_')
+        dest_name = join(split(text_query)[1:min(3, end)], '_')
         for file in rel_files
             final_name = "$(selector.output_path)/$(dest_name)/$(basename(file))"
             mkpath(final_name)
