@@ -1,6 +1,8 @@
 """
 Main script of the program
 To run: julia select.jl
+Author: Johannes Medagbe
+Copyright (c) 2025
 """
 
 using CSV
