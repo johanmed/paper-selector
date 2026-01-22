@@ -29,7 +29,7 @@ export MODEL_NAME=<huggingface-model-name>
 ```
 If those parameters are not defined, `paper-selector` looks by default for documents in a directory named `input` in the project home directory. Make sure that directory exists and contains your papers. Other parameters are set by default. You don't need to provide them unless you want to have more control.
 
-3. Run tool
+3. Run the tool
 
 Once you have everything set up, you can run the tool using the commands below:
 ```bash
@@ -37,9 +37,9 @@ cd src
 julia select.jl
 ```
 
-4. Enter queries
+4. Enter your queries
 
-Next, enter queries when prompted. The default number is 5 but you can change this with the corresponding parameter above. For best performance, we recommend you pass in queries that sound also like English sentences. Once done, wait for the tool to run
+Next, enter your queries when prompted. The default number is 5 but you can change this with the corresponding parameter above. For best performance, we recommend passing in queries that sound almost like English sentences. Once done, wait for the tool to run.
 
 5. Check the results
 
