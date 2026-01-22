@@ -14,9 +14,11 @@ julia setup.jl
 To use `paper-selector`, you need to:
 
 1. Prepare your documents or papers in an input directory
+
 Add all the documents you want to digest in the same directory. We only support PDF for now.
 
 2. Specify parameters if needed
+
 You can specify the path to your input directory and other parameters in your Unix environment with:
 ```bash
 export INPUT_PATH=<actual-path>
@@ -28,6 +30,7 @@ export MODEL_NAME=<huggingface-model-name>
 If those parameters are not defined, `paper-selector` looks by default for documents in a directory named `input` in the project home directory. Make sure that directory exists and contains your papers. Other parameters are set by default. You don't need to provide them unless you want to have more control.
 
 3. Run tool
+
 Once you have everything set up, you can run the tool using the commands below:
 ```bash
 cd src
@@ -35,9 +38,11 @@ julia select.jl
 ```
 
 4. Enter queries
+
 Next, enter queries when prompted. The default number is 5 but you can change this with the corresponding parameter above. For best performance, we recommend you pass in queries that sound also like English sentences. Once done, wait for the tool to run
 
 5. Check the results
+
 Check the results in the directory `output` from the project home directory :)
 
 ## Notes
