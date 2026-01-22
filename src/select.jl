@@ -95,8 +95,8 @@ function evaluate_relevance(
 
         sorted = sortperm(hybrid_scores, rev = true)[1:selector.top_results] # get indices of best documents
         scores = hybrid_scores[sorted]
-	scores = [round(score, digits=3) for score in scores]
-	
+        scores = [round(score, digits = 3) for score in scores]
+
         # Extract corresponding filenames
         files = collect(keys(collection))
         rel_files = files[sorted]
