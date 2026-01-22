@@ -3,7 +3,6 @@
 module Utils
 export preprocess, process_embed, compute_bm25, compute_cosm
 
-# Import required modules
 using Languages
 using LinearAlgebra
 using OrderedCollections
